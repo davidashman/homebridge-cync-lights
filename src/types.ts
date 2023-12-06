@@ -9,6 +9,7 @@ export interface CyncDevice {
   readonly deviceID: number;
   readonly switchID: number;
   readonly displayName: string;
+  readonly deviceType: number;
 
   meshID: number;
 
