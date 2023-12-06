@@ -1,16 +1,16 @@
 {
   "private": true,
-  "displayName": "Plugin Name",
-  "name": "homebridge-plugin-name",
+  "displayName": "Cync Lights",
+  "name": "homebridge-cync-lights",
   "version": "1.0.0",
-  "description": "A short description about what your plugin does.",
+  "description": "Support for Cync Direct Connect lights by GE.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME.git"
+    "url": "https://github.com/davidashman/homebridge-cync-lights.git"
   },
   "bugs": {
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME/issues"
+    "url": "https://github.com/davidashman/homebridge-cync-lights/issues"
   },
   "engines": {
     "node": "^18.17.0 || ^20.9.0",
@@ -26,13 +26,18 @@
   "keywords": [
     "homebridge-plugin"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "color-convert": "^2.0.1",
+    "node-fetch": "^3.3.2"
+  },
   "devDependencies": {
+    "@types/color-convert": "^2.0.3",
     "@types/node": "^18.16.20",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "eslint": "^8.45.0",
     "homebridge": "^1.6.0",
+    "homebridge-config-ui-x": "^4.53.0",
     "nodemon": "^2.0.22",
     "rimraf": "^3.0.2",
     "ts-node": "^10.9.1",
