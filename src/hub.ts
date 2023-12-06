@@ -1,8 +1,8 @@
-import {PlatformAccessory} from "homebridge";
-import {connect, Socket} from "net";
-import {CyncDevice, CyncHome, CyncPacket, CyncPacketSubtype, CyncPacketType} from "./types";
-import {CyncLight} from "./light";
-import {CyncLightsPlatform} from "./platform";
+import {PlatformAccessory} from 'homebridge';
+import {connect, Socket} from 'net';
+import {CyncDevice, CyncHome, CyncPacket, CyncPacketSubtype, CyncPacketType} from './types';
+import {CyncLight} from './light';
+import {CyncLightsPlatform} from './platform';
 
 const PING_BUFFER = Buffer.alloc(0);
 
@@ -12,19 +12,19 @@ export class CyncHub {
   private connectionTime = 0;
   private socket: Socket;
   private readonly queue: CyncPacket[] = [];
-  private seq = 0
+  private seq = 0;
   private readonly lights : CyncLight[] = [];
 
   constructor(
-    private readonly platform: CyncLightsPlatform
+    private readonly platform: CyncLightsPlatform,
   ) {
     this.socket = this.connect();
     setInterval(this.ping.bind(this), 180000);
   }
 
   connect(): Socket {
-    this.platform.log.info("Connecting to Cync servers...");
-    const socket = connect(23778, "cm.gelighting.com");
+    this.platform.log.info('Connecting to Cync servers...');
+    const socket = connect(23778, 'cm.gelighting.com');
     socket.on('readable', this.readPackets.bind(this));
     socket.on('end', this.disconnect.bind(this));
 
@@ -40,7 +40,7 @@ export class CyncHub {
   }
 
   disconnect() {
-    this.platform.log.info(`Connection to Cync has closed.`);
+    this.platform.log.info('Connection to Cync has closed.');
     this.connected = false;
 
     // Don't allow reconnects in any less than 10 seconds since the last successful connection
@@ -48,14 +48,14 @@ export class CyncHub {
   }
 
   handleConnect(packet : CyncPacket) {
-    if (packet.data.readUInt16BE() == 0) {
-      this.platform.log.info("Cync server connected.");
+    if (packet.data.readUInt16BE() === 0) {
+      this.platform.log.info('Cync server connected.');
       this.flushQueue();
       this.connected = true;
       this.connectionTime = Date.now();
     } else {
       this.connected = false;
-      this.platform.log.info("Server authentication failed.");
+      this.platform.log.info('Server authentication failed.');
     }
   }
 
@@ -80,13 +80,15 @@ export class CyncHub {
 
   sendPacket(packet : CyncPacket, log = false) {
     if (this.connected) {
-      if (log)
+      if (log) {
         this.platform.log.debug(`Sending packet: ${packet.data.toString('hex')}`);
+      }
 
       this.writePacket(packet);
     } else {
-      if (log)
+      if (log) {
         this.platform.log.debug(`Queueing packet: ${packet.data.toString('hex')}`);
+      }
 
       // queue the packet
       this.queue.push(packet);
@@ -106,7 +108,7 @@ export class CyncHub {
       type: type,
       isResponse: false,
       length: packet.length,
-      data: packet
+      data: packet,
     };
   }
 
@@ -160,15 +162,15 @@ export class CyncHub {
       if (length > 0) {
         const data = this.socket.read(length);
 
-        if (data.length == length) {
+        if (data.length === length) {
           return {
             type: type,
             length: length,
-            isResponse: (header.readUInt8() & 8) != 0,
-            data: data
-          }
+            isResponse: (header.readUInt8() & 8) !== 0,
+            data: data,
+          };
         } else {
-          this.platform.log.info("Packet length doesn't match.");
+          this.platform.log.info('Packet length does not match.');
         }
       }
     }
@@ -184,7 +186,9 @@ export class CyncHub {
     this.sendPacket(this.createPacket(CyncPacketType.Connection, data), true);
 
     // check again in 5 minutes
-    setTimeout(() => { this.updateConection(device) }, 300000);
+    setTimeout(() => {
+      this.updateConection(device);
+    }, 300000);
   }
 
   updateStatus(device : CyncDevice) {
@@ -212,25 +216,34 @@ export class CyncHub {
       let status = packet.data;
       switch (subtype) {
         case CyncPacketSubtype.Get:
-          const meshID = status.readUInt8(21);
-          const on = status.readUInt8(27) > 0;
-          const brightness = on ? status.readUInt8(28) : 0;
-          this.lights.find(light => light.device.meshID == meshID)?.updateState(on, brightness);
+          this.handleStatusUpdate(status);
+          break;
         case CyncPacketSubtype.Paginated:
           status = status.subarray(22);
           while (status.length > 24) {
-            const meshID = status.readUInt8();
-            const on = status.readUInt8(8) > 0;
-            const brightness = on ? status.readUInt8(12) : 0;
-            const colorTemp = status.readUInt8(16);
-            const rgb = [status.readUInt8(20), status.readUInt8(21), status.readUInt8(22)]
-            this.lights.find(light => light.device.meshID == meshID)?.updateState(on, brightness, colorTemp, rgb);
-
+            this.handlePaginatedStatusUpdate(status);
             status = status.subarray(24);
+            break;
           }
       }
     }
     // this.log.info(`Received status packet of length ${packet.length}: ${packet.data.toString('hex')}`);
+  }
+
+  handleStatusUpdate(status) {
+    const meshID = status.readUInt8(21);
+    const on = status.readUInt8(27) > 0;
+    const brightness = on ? status.readUInt8(28) : 0;
+    this.lights.find(light => light.device.meshID === meshID)?.updateState(on, brightness);
+  }
+
+  handlePaginatedStatusUpdate(status) {
+    const meshID = status.readUInt8();
+    const on = status.readUInt8(8) > 0;
+    const brightness = on ? status.readUInt8(12) : 0;
+    const colorTemp = status.readUInt8(16);
+    const rgb = [status.readUInt8(20), status.readUInt8(21), status.readUInt8(22)];
+    this.lights.find(light => light.device.meshID === meshID)?.updateState(on, brightness, colorTemp, rgb);
   }
 
   handleSync(packet) {
@@ -242,7 +255,7 @@ export class CyncHub {
       const on = status.readUInt8(4) > 0;
       const brightness = on ? status.readUInt8(5) : 0;
       const colorTemp = status.readUInt8(6);
-      this.lights.find(light => light.device.meshID == meshID)?.updateState(on, brightness, colorTemp);
+      this.lights.find(light => light.device.meshID === meshID)?.updateState(on, brightness, colorTemp);
     }
   }
 
@@ -251,7 +264,7 @@ export class CyncHub {
       const meshID = packet.data.readUInt8(21);
       const on = packet.data.readUInt8(27) > 0;
       const brightness = on ? packet.data.readUInt8(28) : 0;
-      this.lights.find(light => light.device.meshID == meshID)?.updateState(on, brightness);
+      this.lights.find(light => light.device.meshID === meshID)?.updateState(on, brightness);
     }
   }
 
@@ -264,9 +277,11 @@ export class CyncHub {
 
   handleConnection(packet : CyncPacket) {
     const switchID = packet.data.readUInt32BE();
-    const light = this.lights.find(light => light.device.switchID == switchID);
+    const light = this.lights.find(light => light.device.switchID === switchID);
     if (light) {
-      setTimeout(() => { this.updateStatus(light.device); });
+      setTimeout(() => {
+        this.updateStatus(light.device);
+      });
     }
   }
 

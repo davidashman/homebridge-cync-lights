@@ -5,12 +5,11 @@ import {
   PlatformAccessory,
   PlatformConfig,
   Service,
-  Characteristic
+  Characteristic,
 } from 'homebridge';
 
 import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
-import {CyncLight} from './light';
-import {CyncHub} from "./hub";
+import {CyncHub} from './hub';
 
 /**
  * HomebridgePlatform
@@ -63,19 +62,19 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
 
   async refreshToken() {
     // first, check the access_token
-    this.log.info("Logging into Cync...");
+    this.log.info('Logging into Cync...');
 
-    let payload = {refresh_token: this.config.refreshToken};
-    let token = await fetch("https://api.gelighting.com/v2/user/token/refresh", {
+    const payload = {refresh_token: this.config.refreshToken};
+    const token = await fetch('https://api.gelighting.com/v2/user/token/refresh', {
       method: 'post',
       body: JSON.stringify(payload),
-      headers: {'Content-Type': 'application/json'}
+      headers: {'Content-Type': 'application/json'},
     });
 
     const data = await token.json();
     if (!data.access_token) {
       this.log.info(`Cync login response: ${JSON.stringify(data)}`);
-      throw new Error("Unable to authenticate with Cync servers.  Please verify you have a valid refresh token.");
+      throw new Error('Unable to authenticate with Cync servers.  Please verify you have a valid refresh token.');
     }
 
     return data.access_token;
@@ -87,16 +86,16 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
    * must not be registered again to prevent "duplicate UUID" errors.
    */
   async discoverDevices(accessToken) {
-    this.log.info("Discovering homes...");
-    let r = await fetch(`https://api.gelighting.com/v2/user/${this.config.userID}/subscribe/devices`, {
-      headers: {'Access-Token': accessToken}
+    this.log.info('iscovering homes...');
+    const r = await fetch(`https://api.gelighting.com/v2/user/${this.config.userID}/subscribe/devices`, {
+      headers: {'Access-Token': accessToken},
     });
     const data = await r.json();
     this.log.info(`Received home response: ${JSON.stringify(data)}`);
 
     for (const home of data) {
-      let homeR = await fetch(`https://api.gelighting.com/v2/product/${home.product_id}/device/${home.id}/property`, {
-        headers: {'Access-Token': accessToken}
+      const homeR = await fetch(`https://api.gelighting.com/v2/product/${home.product_id}/device/${home.id}/property`, {
+        headers: {'Access-Token': accessToken},
       });
       const homeData = await homeR.json();
       this.log.info(`Received device response: ${JSON.stringify(homeData)}`);

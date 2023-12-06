@@ -1,9 +1,9 @@
 import {Service, PlatformAccessory, CharacteristicValue} from 'homebridge';
 
 import {CyncLightsPlatform} from './platform';
-import {CyncHub} from "./hub";
-import {CyncDevice, CyncHome, CyncPacketSubtype, CyncPacketType} from "./types";
-import {rgb, hsv, RGB} from "color-convert/conversions";
+import {CyncHub} from './hub';
+import {CyncDevice, CyncHome, CyncPacketSubtype, CyncPacketType} from './types';
+import {rgb, hsv, RGB} from 'color-convert/conversions';
 
 /**
  * Platform Accessory
@@ -11,9 +11,15 @@ import {rgb, hsv, RGB} from "color-convert/conversions";
  * Each accessory may expose multiple services of different service types.
  */
 
-const DEVICES_WITH_BRIGHTNESS = [1,5,6,7,8,9,10,11,13,14,15,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,48,49,55,56,80,81,82,83,85,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,156,158,159,160,161,162,163,164,165];
-const DEVICES_WITH_COLOR_TEMP = [5,6,7,8,10,11,14,15,19,20,21,22,23,25,26,28,29,30,31,32,33,34,35,80,82,83,85,129,130,131,132,133,135,136,137,138,139,140,141,142,143,144,145,146,147,153,154,156,158,159,160,161,162,163,164,165];
-const DEVICES_WITH_RGB = [6,7,8,21,22,23,30,31,32,33,34,35,131,132,133,137,138,139,140,141,142,143,146,147,153,154,156,158,159,160,161,162,163,164,165];
+const DEVICES_WITH_BRIGHTNESS = [1, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+  26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 48, 49, 55, 56, 80, 81, 82, 83, 85, 128, 129, 130, 131, 132, 133,
+  134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 156, 158,
+  159, 160, 161, 162, 163, 164, 165];
+const DEVICES_WITH_COLOR_TEMP = [5, 6, 7, 8, 10, 11, 14, 15, 19, 20, 21, 22, 23, 25, 26, 28, 29, 30, 31,
+  32, 33, 34, 35, 80, 82, 83, 85, 129, 130, 131, 132, 133, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145,
+  146, 147, 153, 154, 156, 158, 159, 160, 161, 162, 163, 164, 165];
+const DEVICES_WITH_RGB = [6, 7, 8, 21, 22, 23, 30, 31, 32, 33, 34, 35, 131, 132, 133, 137, 138, 139, 140,
+  141, 142, 143, 146, 147, 153, 154, 156, 158, 159, 160, 161, 162, 163, 164, 165];
 
 export class CyncLight {
   private service: Service;
@@ -26,7 +32,7 @@ export class CyncLight {
     on: false,
     brightness: 100,
     colorTemp: 0,
-    rgb: [0, 0, 0]
+    rgb: [0, 0, 0],
   };
 
   constructor(
@@ -34,7 +40,7 @@ export class CyncLight {
     private readonly accessory: PlatformAccessory,
     private readonly hub: CyncHub,
     public readonly device: CyncDevice,
-    public readonly home: CyncHome
+    public readonly home: CyncHome,
   ) {
 
     this.device.meshID = ((this.device.deviceID % this.home.id) % 1000) + (Math.round((this.device.deviceID % this.home.id) / 1000) * 256);
@@ -86,16 +92,25 @@ export class CyncLight {
       brightness: brightness,
       colorTemp: colorTemp || this.states.colorTemp,
       rgb: rgbValue || this.states.rgb,
-    }
+    };
 
     this.platform.log.info(`Updating ${this.device.displayName} with states: ${JSON.stringify(this.states)}`);
     this.service.getCharacteristic(this.platform.Characteristic.On).updateValue(this.states.on);
-    this.service.getCharacteristic(this.platform.Characteristic.Brightness).updateValue(this.states.brightness);
-    this.service.getCharacteristic(this.platform.Characteristic.ColorTemperature).updateValue(Math.round(((100 - this.states.colorTemp) * 360) / 100) + 140);
 
-    const hsv = rgb.hsv(this.states.rgb as RGB);
-    this.service.getCharacteristic(this.platform.Characteristic.Hue).updateValue(hsv[0]);
-    this.service.getCharacteristic(this.platform.Characteristic.Saturation).updateValue(hsv[1]);
+    if (DEVICES_WITH_BRIGHTNESS.includes(this.device.deviceType)) {
+      this.service.getCharacteristic(this.platform.Characteristic.Brightness).updateValue(this.states.brightness);
+    }
+
+    if (DEVICES_WITH_COLOR_TEMP.includes(this.device.deviceType)) {
+      this.service.getCharacteristic(this.platform.Characteristic.ColorTemperature)
+        .updateValue(Math.round(((100 - this.states.colorTemp) * 360) / 100) + 140);
+    }
+
+    if (DEVICES_WITH_RGB.includes(this.device.deviceType)) {
+      const hsv = rgb.hsv(this.states.rgb as RGB);
+      this.service.getCharacteristic(this.platform.Characteristic.Hue).updateValue(hsv[0]);
+      this.service.getCharacteristic(this.platform.Characteristic.Saturation).updateValue(hsv[1]);
+    }
   }
 
   updateDeviceState() {
@@ -109,7 +124,9 @@ export class CyncLight {
     request.writeUInt8(this.states.rgb[1], 12);
     request.writeUInt8(this.states.rgb[2], 13);
 
-    const hash = ((496 + this.device.meshID + (this.states.on ? 1 : 0) + this.states.brightness + this.states.colorTemp + this.states.rgb[0] + this.states.rgb[1] + this.states.rgb[2]) % 256);
+    const hash = ((496 + this.device.meshID + (this.states.on ? 1 : 0) +
+      this.states.brightness + this.states.colorTemp + this.states.rgb[0] +
+      this.states.rgb[1] + this.states.rgb[2]) % 256);
     request.writeUInt8(hash, 14);
     request.writeUInt8(0x7e, 15);
 
