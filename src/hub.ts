@@ -3,7 +3,6 @@ import {connect, Socket} from 'net';
 import {CyncDevice, CyncHome, CyncPacket, CyncPacketSubtype, CyncPacketType} from './types';
 import {CyncLight} from './light';
 import {CyncLightsPlatform} from './platform';
-import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
 
 const PING_BUFFER = Buffer.alloc(0);
 
