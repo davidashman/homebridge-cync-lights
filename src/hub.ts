@@ -10,7 +10,7 @@ export class CyncHub {
 
   private connected = false;
   private connectionTime = 0;
-  private socket: Socket;
+  private socket!: Socket;
   private readonly queue: CyncPacket[] = [];
   private seq = 0;
   private readonly lights : CyncLight[] = [];
@@ -18,25 +18,16 @@ export class CyncHub {
   constructor(
     private readonly platform: CyncLightsPlatform,
   ) {
-    this.socket = this.connect();
     setInterval(this.ping.bind(this), 180000);
   }
 
-  connect(): Socket {
+  connect() {
+    this.connectionTime = Date.now();
     this.platform.log.info('Connecting to Cync servers...');
-    const socket = connect(23778, 'cm.gelighting.com');
-    socket.on('readable', this.readPackets.bind(this));
-    socket.on('end', this.disconnect.bind(this));
-
-    const data = Buffer.alloc(this.platform.config.authorize.length + 10);
-    data.writeUInt8(0x03);
-    data.writeUInt32BE(this.platform.config.userID, 1);
-    data.writeUInt8(this.platform.config.authorize.length, 6);
-    data.write(this.platform.config.authorize, 7, this.platform.config.authorize.length, 'ascii');
-    data.writeUInt8(0xb4, this.platform.config.authorize.length + 9);
-    socket.write(this.createPacket(CyncPacketType.Auth, data).data);
-
-    return socket;
+    this.socket = connect(23778, 'cm.gelighting.com');
+    this.socket.on('readable', this.readPackets.bind(this));
+    this.socket.on('end', this.disconnect.bind(this));
+    this.platform.auth.authenticate(this.socket);
   }
 
   disconnect() {
@@ -44,15 +35,14 @@ export class CyncHub {
     this.connected = false;
 
     // Don't allow reconnects in any less than 10 seconds since the last successful connection
-    setTimeout(() => this.socket = this.connect(), Math.max(10000 - Date.now() + this.connectionTime, 0));
+    setTimeout(this.connect.bind(this), Math.max(10000 - Date.now() + this.connectionTime, 0));
   }
 
-  handleConnect(packet : CyncPacket) {
+  handleAuth(packet : CyncPacket) {
     if (packet.data.readUInt16BE() === 0) {
       this.platform.log.info('Cync server connected.');
       this.flushQueue();
       this.connected = true;
-      this.connectionTime = Date.now();
     } else {
       this.connected = false;
       this.platform.log.info('Server authentication failed.');
@@ -131,7 +121,7 @@ export class CyncHub {
       // this.printPacket(packet);
       switch (packet.type) {
         case CyncPacketType.Auth:
-          this.handleConnect(packet);
+          this.handleAuth(packet);
           break;
         case CyncPacketType.Status:
           this.handleStatus(packet);

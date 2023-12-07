@@ -1,7 +1,6 @@
 {
   "pluginAlias": "CyncLights",
   "pluginType": "platform",
-  "headerDisplay": "To use this plugin, you need to first authenticate using the included script.  Open a terminal and navigate to node_modules/homebridge-cync.  Run 'npm run cync-auth &lt;Cync email address&gt;'.  This will send you a two-factor code.  Once you receive that, run 'npm run cync-auth &lt;Cync email address&gt; &lt;Cync password&gt; &lt;two-factor code&gt;.  Save the refresh token, user ID and authorize token to the settings.",
   "singular": true,
   "schema": {
     "type": "object",
@@ -12,24 +11,43 @@
         "required": true,
         "default": "Cync Lights"
       },
+      "emailAddress": {
+        "title": "Cync Email Address",
+        "type": "string",
+        "required": true,
+        "default": ""
+      },
+      "password": {
+        "title": "Cync Password",
+        "type": "string",
+        "required": true,
+        "default": ""
+      },
+      "mfaCode": {
+        "title": "Two-factor Code",
+        "type": "string",
+        "default": ""
+      },
       "userID": {
         "title": "User ID",
         "type": "string",
-        "required": true,
         "default": ""
       },
       "refreshToken": {
         "title": "Refresh Token",
         "type": "string",
-        "required": true,
         "default": ""
       },
       "authorize": {
         "title": "Authorization Token (authorize)",
         "type": "string",
-        "required": true,
         "default": ""
       }
     }
-  }
+  },
+  "layout": [
+    { "key": "emailAddress" },
+    { "key": "password" },
+    { "key": "mfaCode" }
+  ]
 }
