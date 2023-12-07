@@ -10,7 +10,7 @@ import {
 
 import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
 import {CyncHub} from './hub';
-import {CyncAuth} from "./auth";
+import {CyncAuth} from './auth';
 import {CyncSession} from './types';
 
 /**

@@ -1,7 +1,7 @@
 import {CyncLightsPlatform} from './platform';
 import {StorageService} from 'homebridge/lib/storageService';
 import {PLUGIN_NAME} from './settings';
-import {CyncAuthInfo, CyncPacketType} from './types'
+import {CyncAuthInfo, CyncPacketType} from './types';
 import {Socket} from 'net';
 
 export class CyncAuth {
@@ -31,7 +31,7 @@ export class CyncAuth {
       email: this.platform.config.emailAddress,
       password: this.platform.config.password,
       two_factor: this.platform.config.mfaCode,
-      resource: 'abcdefghijk'
+      resource: 'abcdefghijk',
     };
     const response = await fetch('https://api.gelighting.com/v2/user_auth/two_factor', {
       method: 'post',
@@ -45,7 +45,7 @@ export class CyncAuth {
       userID: data.user_id,
       authorize: data.authorize,
       valid: true,
-    }
+    };
 
     // save the info
     this.storage.setItemSync(`${PLUGIN_NAME}.json`, this.info);
@@ -63,7 +63,7 @@ export class CyncAuth {
     const payload = {
       corp_id: '1007d2ad150c4000',
       email: this.platform.config.emailAddress,
-      local_lang: 'en-us'
+      local_lang: 'en-us',
     };
     await fetch('https://api.gelighting.com/v2/two_factor/email/verifycode', {
       method: 'post',
@@ -78,8 +78,7 @@ export class CyncAuth {
     if (!this.info.valid) {
       if (this.platform.config.mfaCode) {
         return this.login();
-      }
-      else if (this.platform.config.emailAddress) {
+      } else if (this.platform.config.emailAddress) {
         await this.requestCode();
       }
 
