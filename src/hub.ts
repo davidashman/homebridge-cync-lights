@@ -3,6 +3,7 @@ import {connect, Socket} from 'net';
 import {CyncDevice, CyncHome, CyncPacket, CyncPacketSubtype, CyncPacketType} from './types';
 import {CyncLight} from './light';
 import {CyncLightsPlatform} from './platform';
+import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
 
 const PING_BUFFER = Buffer.alloc(0);
 
@@ -22,12 +23,26 @@ export class CyncHub {
   }
 
   connect() {
-    this.connectionTime = Date.now();
-    this.platform.log.info('Connecting to Cync servers...');
-    this.socket = connect(23778, 'cm.gelighting.com');
-    this.socket.on('readable', this.readPackets.bind(this));
-    this.socket.on('end', this.disconnect.bind(this));
-    this.platform.auth.authenticate(this.socket);
+    if (!this.connected) {
+      this.connectionTime = Date.now();
+      this.platform.log.info('Connecting to Cync server...');
+      this.socket = connect(23778, 'cm.gelighting.com');
+      this.socket.on('readable', this.readPackets.bind(this));
+      this.socket.on('end', this.disconnect.bind(this));
+
+      this.platform.log.info('Authenticating with Cync server...');
+      const dataLength = this.platform.config.authorize.length + 10;
+      const packet = Buffer.alloc(dataLength + 5);
+      packet.writeUInt8((CyncPacketType.Auth << 4) | 3);
+      packet.writeUInt32BE(dataLength, 1);
+      packet.writeUInt8(0x03, 5);
+      packet.writeUInt32BE(this.platform.config.userID, 6);
+      packet.writeUInt8(this.platform.config.authorize.length, 11);
+      packet.write(this.platform.config.authorize, 12, this.platform.config.authorize.length, 'ascii');
+      packet.writeUInt8(0xb4, this.platform.config.authorize.length + 14);
+      this.platform.log.debug(`Authenticating with packet: ${packet.toString('hex')}`);
+      this.socket.write(packet);
+    }
   }
 
   disconnect() {

@@ -1,18 +1,3 @@
-export interface CyncAuthInfo {
-
-  readonly refreshToken: string;
-  readonly userID: number;
-  readonly authorize: string;
-  readonly valid: boolean;
-
-}
-
-export interface CyncSession {
-
-  readonly userID: number;
-  readonly accessToken: string;
-
-}
 
 export interface CyncHome {
 

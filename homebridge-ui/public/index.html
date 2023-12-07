@@ -1,0 +1,67 @@
+<div class="card card-body">
+    <div id="options" class="card-body my-3 w-75 mx-auto">
+
+        <form id='authForm' class="form-horizontal">
+
+            <div id="codeDiv" class="card-body my-3 w-75 mx-auto">
+                <div class="mb-3">
+                    <label class="form-label" for="emailAddress">Cync Email Address</label>
+                    <input class="form-control" type="email" id="emailAddress" placeholder="name@example.com"/>
+                </div>
+
+                <button type="button" class="btn btn-secondary text-center" id="requestCode">Request 2FA Code</button>
+            </div>
+
+            <div id="authDiv" class="card-body my-3 w-75 mx-auto">
+                <div class="mb-3">
+                    <label class="form-label" for="password">Cync Password</label>
+                    <input class="form-control" type="password" id="password"/>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="mfaCode">2FA Code</label>
+                    <input class="form-control" type="text" id="mfaCode"/>
+                </div>
+
+                <button type="button" class="btn btn-primary text-center" id="login">Login</button>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+<script>
+    homebridge.addEventListener('ready', async () => {
+        let pluginConfig = await homebridge.getPluginConfig();
+        document.getElementById('emailAddress').value = pluginConfig[0].emailAddress;
+
+        document.getElementById('requestCode').addEventListener('click', () => {
+            document.getElementById('mfaCode').value = '';
+            const emailAddress = document.getElementById('emailAddress').value;
+            homebridge.request('/requestCode', { emailAddress: emailAddress }).then((response) => {
+                homebridge.toast.info(`Please check your ${emailAddress} inbox for your code.`);
+            });
+        });
+
+        document.getElementById('login').addEventListener('click', () => {
+            const payload = {
+                emailAddress: document.getElementById('emailAddress').value,
+                password: document.getElementById('password').value,
+                mfaCode: document.getElementById('mfaCode').value,
+            }
+            homebridge.request('/login', payload).then(async (config) => {
+                if (config.error) {
+                    homebridge.toast.error(config.error);
+                    document.getElementById('password').value = '';
+                    document.getElementById('mfaCode').value = '';
+                }
+                else {
+                    await homebridge.updatePluginConfig([config]);
+                    homebridge.toast.success(`You have successfully authenticated with Cync!`);
+                    await homebridge.savePluginConfig();
+                    homebridge.closeSettings();
+                }
+            });
+        });
+    });
+</script>

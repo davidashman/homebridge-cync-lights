@@ -2,6 +2,7 @@
   "pluginAlias": "CyncLights",
   "pluginType": "platform",
   "singular": true,
+  "customUi": true,
   "schema": {
     "type": "object",
     "properties": {
@@ -15,17 +16,6 @@
         "title": "Cync Email Address",
         "type": "string",
         "required": true,
-        "default": ""
-      },
-      "password": {
-        "title": "Cync Password",
-        "type": "string",
-        "required": true,
-        "default": ""
-      },
-      "mfaCode": {
-        "title": "Two-factor Code",
-        "type": "string",
         "default": ""
       },
       "userID": {
@@ -44,10 +34,5 @@
         "default": ""
       }
     }
-  },
-  "layout": [
-    { "key": "emailAddress" },
-    { "key": "password" },
-    { "key": "mfaCode" }
-  ]
+  }
 }

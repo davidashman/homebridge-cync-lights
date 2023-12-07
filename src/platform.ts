@@ -10,8 +10,6 @@ import {
 
 import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
 import {CyncHub} from './hub';
-import {CyncAuth} from './auth';
-import {CyncSession} from './types';
 
 /**
  * HomebridgePlatform
@@ -25,8 +23,10 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
 
-  public readonly auth: CyncAuth;
+  // public readonly auth: CyncAuth;
   public readonly hub: CyncHub;
+  private accessToken = '';
+  private accessTokenExpires = 0;
 
   constructor(
     public readonly log: Logger,
@@ -34,7 +34,7 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
     public readonly api: API,
   ) {
     this.log.debug('Finished initializing platform:', this.config.name);
-    this.auth = new CyncAuth(this);
+    // this.auth = new CyncAuth(this);
     this.hub = new CyncHub(this);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
@@ -44,10 +44,10 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
     this.api.on('didFinishLaunching', () => {
       log.debug('Executed didFinishLaunching callback');
 
-      this.auth.refreshToken()
-        .then((session) => {
+      this.getAccessToken()
+        .then((accessToken) => {
           Promise.all([
-            this.discoverDevices(session),
+            this.discoverDevices(accessToken),
             this.hub.connect(),
           ]);
         })
@@ -68,22 +68,52 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
     this.accessories.push(accessory);
   }
 
+  async getAccessToken() {
+    if (!this.config.refreshToken) {
+      throw new Error('Please go to the plugin settings and log into Cync.');
+    }
+
+    if (this.accessTokenExpires < Date.now()) {
+      // first, check the access_token
+      this.log.info('Logging into Cync...');
+
+      const payload = {refresh_token: this.config.refreshToken};
+      const token = await fetch('https://api.gelighting.com/v2/user/token/refresh', {
+        method: 'post',
+        body: JSON.stringify(payload),
+        headers: {'Content-Type': 'application/json'},
+      });
+
+      const data = await token.json();
+      if (!data.access_token) {
+        this.log.info(`Cync login response: ${JSON.stringify(data)}`);
+        throw new Error('Unable to authenticate with Cync servers.  Please verify you have a valid refresh token.');
+      }
+
+      this.accessToken = data.access_token;
+      // We will refresh it one day before it expires
+      this.accessTokenExpires = Date.now() + data.expires_in - 86400;
+    }
+
+    return this.accessToken;
+  }
+
   /**
    * This is an example method showing how to register discovered accessories.
    * Accessories must only be registered once, previously created accessories
    * must not be registered again to prevent "duplicate UUID" errors.
    */
-  async discoverDevices(session : CyncSession) {
+  async discoverDevices(accessToken) {
     this.log.info('Discovering homes...');
-    const r = await fetch(`https://api.gelighting.com/v2/user/${session.userID}/subscribe/devices`, {
-      headers: {'Access-Token': session.accessToken},
+    const r = await fetch(`https://api.gelighting.com/v2/user/${this.config.userID}/subscribe/devices`, {
+      headers: {'Access-Token': accessToken},
     });
     const data = await r.json();
     this.log.info(`Received home response: ${JSON.stringify(data)}`);
 
     for (const home of data) {
       const homeR = await fetch(`https://api.gelighting.com/v2/product/${home.product_id}/device/${home.id}/property`, {
-        headers: {'Access-Token': session.accessToken},
+        headers: {'Access-Token': accessToken},
       });
       const homeData = await homeR.json();
       this.log.info(`Received device response: ${JSON.stringify(homeData)}`);

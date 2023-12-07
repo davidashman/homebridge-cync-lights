@@ -26,6 +26,7 @@
     "homebridge-plugin"
   ],
   "dependencies": {
+    "@homebridge/plugin-ui-utils": "^1.0.0",
     "color-convert": "^2.0.1",
     "node-fetch": "^3.3.2"
   },
