@@ -1,7 +1,7 @@
 {
   "displayName": "Homebridge Cync Lights",
   "name": "homebridge-cync-lights",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Support for Cync Direct Connect lights by GE.",
   "license": "Apache-2.0",
   "repository": {
