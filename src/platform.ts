@@ -54,6 +54,11 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
         .catch((error) => {
           this.log.error(error.message);
         });
+
+      // check for devices every 10 minutes
+      setInterval(() => this.getAccessToken()
+        .then((accessToken) => this.discoverDevices(accessToken))
+        .catch((error) => this.log.error(error.message)), 600000);
     });
   }
 
@@ -109,14 +114,14 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
       headers: {'Access-Token': accessToken},
     });
     const data = await r.json();
-    this.log.info(`Received home response: ${JSON.stringify(data)}`);
+    this.log.debug(`Received home response: ${JSON.stringify(data)}`);
 
     for (const home of data) {
       const homeR = await fetch(`https://api.gelighting.com/v2/product/${home.product_id}/device/${home.id}/property`, {
         headers: {'Access-Token': accessToken},
       });
       const homeData = await homeR.json();
-      this.log.info(`Received device response: ${JSON.stringify(homeData)}`);
+      this.log.debug(`Received device response: ${JSON.stringify(homeData)}`);
       if (homeData.bulbsArray && homeData.bulbsArray.length > 0) {
         const discovered: string[] = [];
 
@@ -140,6 +145,7 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
 
         const remove = this.accessories.filter((accessory) => !discovered.includes(accessory.UUID));
         for (const accessory of remove) {
+          this.log.info('Removing accessory: ', accessory.displayName);
           this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         }
       }
