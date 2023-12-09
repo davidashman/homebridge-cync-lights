@@ -222,7 +222,7 @@ export class CyncHub {
         //   this.handleStatusUpdate(packet.data);
         //   break;
         case CyncPacketSubtype.Paginated:
-          for (let offset = 22; offset + 24 < packet.data.length; offset += 24) {
+          for (let offset = 22; offset + 24 <= packet.data.length; offset += 24) {
             this.handlePaginatedStatusUpdate(packet.data.subarray(offset, offset + 24));
           }
       }
@@ -249,7 +249,7 @@ export class CyncHub {
   }
 
   handleSync(packet) {
-    for (let offset = 7; offset + 19 < packet.data.length; offset += 19) {
+    for (let offset = 7; offset + 19 <= packet.data.length; offset += 19) {
       this.handleSyncStatus(packet.data.subarray(offset, offset + 19));
     }
   }
