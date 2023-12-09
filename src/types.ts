@@ -2,7 +2,13 @@
 export interface CyncHome {
 
   readonly id: number;
+  readonly product_id: string;
 
+}
+
+export interface CyncHomeDevices {
+
+  readonly bulbsArray: CyncDevice[];
 }
 
 export interface CyncDevice {
@@ -11,6 +17,7 @@ export interface CyncDevice {
   readonly switchID: number;
   readonly displayName: string;
   readonly deviceType: number;
+  readonly mac: string;
 
   meshID: number;
 
@@ -22,7 +29,8 @@ export enum CyncPacketType {
   Status = 7,
   StatusSync = 8,
   Connection = 10,
-  Ping = 13
+  Ping = 13,
+  PaginatedStatus = 17,
 }
 
 export enum CyncPacketSubtype {
@@ -37,5 +45,12 @@ export interface CyncPacket {
   readonly length: number;
   readonly isResponse: boolean;
   readonly data: Buffer;
+
+}
+
+export interface CyncAuthResponse {
+
+  readonly access_token: string;
+  readonly expires_in: number;
 
 }

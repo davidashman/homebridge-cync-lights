@@ -1,8 +1,8 @@
 import {PlatformAccessory} from 'homebridge';
 import {connect, Socket} from 'net';
-import {CyncDevice, CyncHome, CyncPacket, CyncPacketSubtype, CyncPacketType} from './types';
-import {CyncLight} from './light';
-import {CyncLightsPlatform} from './platform';
+import {CyncDevice, CyncHome, CyncPacket, CyncPacketSubtype, CyncPacketType} from './types.js';
+import {CyncLight} from './light.js';
+import {CyncLightsPlatform} from './platform.js';
 
 const PING_BUFFER = Buffer.alloc(0);
 
@@ -143,9 +143,9 @@ export class CyncHub {
         case CyncPacketType.Sync:
           this.handleSync(packet);
           break;
-        case CyncPacketType.StatusSync:
-          this.handleStatusSync(packet);
-          break;
+        // case CyncPacketType.StatusSync:
+        //   this.handleStatusSync(packet);
+        //   break;
         case CyncPacketType.Connection:
           this.handleConnection(packet);
           break;
@@ -217,31 +217,29 @@ export class CyncHub {
 
     if (packet.length >= 25) {
       const subtype = packet.data.readUInt8(13);
-      let status = packet.data;
       switch (subtype) {
-        case CyncPacketSubtype.Get:
-          this.handleStatusUpdate(status);
-          break;
+        // case CyncPacketSubtype.Get:
+        //   this.handleStatusUpdate(packet.data);
+        //   break;
         case CyncPacketSubtype.Paginated:
-          status = status.subarray(22);
-          while (status.length > 24) {
-            this.handlePaginatedStatusUpdate(status);
-            status = status.subarray(24);
-            break;
+          for (let offset = 22; offset + 24 < packet.data.length; offset += 24) {
+            this.handlePaginatedStatusUpdate(packet.data.subarray(offset, offset + 24));
           }
       }
     }
     // this.log.info(`Received status packet of length ${packet.length}: ${packet.data.toString('hex')}`);
   }
 
-  handleStatusUpdate(status) {
-    const meshID = status.readUInt8(21);
-    const on = status.readUInt8(27) > 0;
-    const brightness = on ? status.readUInt8(28) : 0;
-    this.lights.find(light => light.device.meshID === meshID)?.updateState(on, brightness);
-  }
+  // handleStatusUpdate(status) {
+  //   this.platform.log.debug(`Status packet: ${status.toString('hex')}`);
+  //   const meshID = status.readUInt8(21);
+  //   const on = status.readUInt8(27) > 0;
+  //   const brightness = on ? status.readUInt8(28) : 0;
+  //   this.lights.find(light => light.device.meshID === meshID)?.updateState(on, brightness);
+  // }
 
   handlePaginatedStatusUpdate(status) {
+    this.platform.log.debug(`Paginated Status packet: ${status.toString('hex')}`);
     const meshID = status.readUInt8();
     const on = status.readUInt8(8) > 0;
     const brightness = on ? status.readUInt8(12) : 0;
@@ -251,26 +249,29 @@ export class CyncHub {
   }
 
   handleSync(packet) {
-    const data = packet.data.subarray(7);
-
-    for (let offset = 0; offset < data.length; offset += 19) {
-      const status = data.subarray(offset, offset + 19);
-      const meshID = status.readUInt8(3);
-      const on = status.readUInt8(4) > 0;
-      const brightness = on ? status.readUInt8(5) : 0;
-      const colorTemp = status.readUInt8(6);
-      this.lights.find(light => light.device.meshID === meshID)?.updateState(on, brightness, colorTemp);
+    for (let offset = 7; offset + 19 < packet.data.length; offset += 19) {
+      this.handleSyncStatus(packet.data.subarray(offset, offset + 19));
     }
   }
 
-  handleStatusSync(packet) {
-    if (packet.length >= 33) {
-      const meshID = packet.data.readUInt8(21);
-      const on = packet.data.readUInt8(27) > 0;
-      const brightness = on ? packet.data.readUInt8(28) : 0;
-      this.lights.find(light => light.device.meshID === meshID)?.updateState(on, brightness);
-    }
+  handleSyncStatus(status) {
+    this.platform.log.debug(`Sync packet: ${status.toString('hex')}`);
+    const meshID = status.readUInt8(3);
+    const on = status.readUInt8(4) > 0;
+    const brightness = on ? status.readUInt8(5) : 0;
+    const colorTemp = status.readUInt8(6);
+    this.lights.find(light => light.device.meshID === meshID)?.updateState(on, brightness, colorTemp);
   }
+
+  // handleStatusSync(packet) {
+  //   if (packet.length >= 33) {
+  //     this.platform.log.debug(`Sync packet: ${packet.toString('hex')}`);
+  //     const meshID = packet.data.readUInt8(21);
+  //     const on = packet.data.readUInt8(27) > 0;
+  //     const brightness = on ? packet.data.readUInt8(28) : 0;
+  //     this.lights.find(light => light.device.meshID === meshID)?.updateState(on, brightness);
+  //   }
+  // }
 
   registerDevice(accessory : PlatformAccessory, device : CyncDevice, home : CyncHome) {
     const light = new CyncLight(this.platform, accessory, this, device, home);

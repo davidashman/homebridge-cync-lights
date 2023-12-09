@@ -1,9 +1,9 @@
 import {Service, PlatformAccessory, CharacteristicValue} from 'homebridge';
 
-import {CyncLightsPlatform} from './platform';
-import {CyncHub} from './hub';
-import {CyncDevice, CyncHome, CyncPacketSubtype, CyncPacketType} from './types';
-import {rgb, hsv, RGB} from 'color-convert/conversions';
+import {CyncLightsPlatform} from './platform.js';
+import {CyncHub} from './hub.js';
+import {CyncDevice, CyncHome, CyncPacketSubtype, CyncPacketType} from './types.js';
+import convert from 'color-convert';
 
 /**
  * Platform Accessory
@@ -94,7 +94,7 @@ export class CyncLight {
       rgb: rgbValue || this.states.rgb,
     };
 
-    this.platform.log.info(`Updating ${this.device.displayName} with states: ${JSON.stringify(this.states)}`);
+    this.platform.log.info(`Received update for ${this.device.displayName} with states: ${JSON.stringify(this.states)}`);
     this.service.getCharacteristic(this.platform.Characteristic.On).updateValue(this.states.on);
 
     if (DEVICES_WITH_BRIGHTNESS.includes(this.device.deviceType)) {
@@ -107,7 +107,7 @@ export class CyncLight {
     }
 
     if (DEVICES_WITH_RGB.includes(this.device.deviceType)) {
-      const hsv = rgb.hsv(this.states.rgb as RGB);
+      const hsv = this.hsv();
       this.service.getCharacteristic(this.platform.Characteristic.Hue).updateValue(hsv[0]);
       this.service.getCharacteristic(this.platform.Characteristic.Saturation).updateValue(hsv[1]);
     }
@@ -155,17 +155,21 @@ export class CyncLight {
     this.updateDeviceState();
   }
 
+  hsv() {
+    return convert.rgb.hsv(this.states.rgb[0], this.states.rgb[1], this.states.rgb[2]);
+  }
+
   async setHue(value: CharacteristicValue) {
-    const hsvValue = rgb.hsv(this.states.rgb as RGB);
+    const hsvValue = this.hsv();
     hsvValue[0] = value as number;
-    this.states.rgb = hsv.rgb(hsvValue);
+    this.states.rgb = convert.hsv.rgb(hsvValue);
     this.updateDeviceState();
   }
 
   async setSaturation(value: CharacteristicValue) {
-    const hsvValue = rgb.hsv(this.states.rgb as RGB);
+    const hsvValue = this.hsv();
     hsvValue[1] = value as number;
-    this.states.rgb = hsv.rgb(hsvValue);
+    this.states.rgb = convert.hsv.rgb(hsvValue);
     this.updateDeviceState();
   }
 

@@ -8,8 +8,10 @@ import {
   Characteristic,
 } from 'homebridge';
 
-import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
-import {CyncHub} from './hub';
+import {PLATFORM_NAME, PLUGIN_NAME} from './settings.js';
+import {CyncHub} from './hub.js';
+import {CyncAuthResponse, CyncHome, CyncHomeDevices} from './types.js';
+import fetch from 'node-fetch';
 
 /**
  * HomebridgePlatform
@@ -89,7 +91,7 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
         headers: {'Content-Type': 'application/json'},
       });
 
-      const data = await token.json();
+      const data = await token.json() as CyncAuthResponse;
       if (!data.access_token) {
         this.log.info(`Cync login response: ${JSON.stringify(data)}`);
         throw new Error('Unable to authenticate with Cync servers.  Please verify you have a valid refresh token.');
@@ -113,14 +115,14 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
     const r = await fetch(`https://api.gelighting.com/v2/user/${this.config.userID}/subscribe/devices`, {
       headers: {'Access-Token': accessToken},
     });
-    const data = await r.json();
+    const data = await r.json() as CyncHome[];
     this.log.debug(`Received home response: ${JSON.stringify(data)}`);
 
     for (const home of data) {
       const homeR = await fetch(`https://api.gelighting.com/v2/product/${home.product_id}/device/${home.id}/property`, {
         headers: {'Access-Token': accessToken},
       });
-      const homeData = await homeR.json();
+      const homeData = await homeR.json() as CyncHomeDevices;
       this.log.debug(`Received device response: ${JSON.stringify(homeData)}`);
       if (homeData.bulbsArray && homeData.bulbsArray.length > 0) {
         const discovered: string[] = [];
