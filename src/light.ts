@@ -24,21 +24,17 @@ const DEVICES_WITH_RGB = [6, 7, 8, 21, 22, 23, 30, 31, 32, 33, 34, 35, 131, 132,
 export class CyncLight {
   private service: Service;
 
-  /**
-   * These are just used to create a working example
-   * You should implement your own code to track the state of your accessory
-   */
   private states = {
     on: false,
-    brightness: 100,
-    colorTemp: 0,
-    rgb: [0, 0, 0],
+    brightness: 0,
+    colorTemp: 13,
+    rgb: [255, 255, 255],
   };
 
   constructor(
     private readonly platform: CyncLightsPlatform,
-    private readonly accessory: PlatformAccessory,
-    private readonly hub: CyncHub,
+    public readonly accessory: PlatformAccessory,
+    public readonly hub: CyncHub,
     public readonly device: CyncDevice,
     public readonly home: CyncHome,
   ) {
@@ -70,19 +66,24 @@ export class CyncLight {
 
     if (DEVICES_WITH_BRIGHTNESS.includes(this.device.deviceType)) {
       this.service.getCharacteristic(this.platform.Characteristic.Brightness)
-        .onSet(this.setBrightness.bind(this));
+        .onSet(this.setBrightness.bind(this))
+        .onGet(this.getBrightness.bind(this));
     }
 
     if (DEVICES_WITH_COLOR_TEMP.includes(this.device.deviceType)) {
       this.service.getCharacteristic(this.platform.Characteristic.ColorTemperature)
-        .onSet(this.setHomekitColorTemp.bind(this));
+        .onSet(this.setHomekitColorTemp.bind(this))
+        .onGet(this.getHomekitColorTemp.bind(this));
     }
 
     if (DEVICES_WITH_RGB.includes(this.device.deviceType)) {
       this.service.getCharacteristic(this.platform.Characteristic.Hue)
-        .onSet(this.setHue.bind(this));
+        .onSet(this.setHue.bind(this))
+        .onGet(this.getHue.bind(this));
+
       this.service.getCharacteristic(this.platform.Characteristic.Saturation)
-        .onSet(this.setSaturation.bind(this));
+        .onSet(this.setSaturation.bind(this))
+        .onGet(this.getSaturation.bind(this));
     }
   }
 
@@ -94,7 +95,8 @@ export class CyncLight {
       rgb: rgbValue || this.states.rgb,
     };
 
-    this.platform.log.info(`Received update for ${this.device.displayName} with states: ${JSON.stringify(this.states)}`);
+    this.platform.log.info(`Received update for ${this.accessory.displayName} (${this.accessory.UUID}) with states: `,
+      JSON.stringify(this.states));
     this.service.getCharacteristic(this.platform.Characteristic.On).updateValue(this.states.on);
 
     if (DEVICES_WITH_BRIGHTNESS.includes(this.device.deviceType)) {
@@ -103,7 +105,7 @@ export class CyncLight {
 
     if (DEVICES_WITH_COLOR_TEMP.includes(this.device.deviceType)) {
       this.service.getCharacteristic(this.platform.Characteristic.ColorTemperature)
-        .updateValue(Math.round(((100 - this.states.colorTemp) * 360) / 100) + 140);
+        .updateValue(this.toHomekitColorTemp(this.states.colorTemp));
     }
 
     if (DEVICES_WITH_RGB.includes(this.device.deviceType)) {
@@ -133,44 +135,83 @@ export class CyncLight {
     this.hub.sendPacket(this.hub.createDevicePacket(this.device, CyncPacketType.Status, CyncPacketSubtype.Set, request), true);
   }
 
-  async setOn(value: CharacteristicValue) {
+  setOn(value: CharacteristicValue) {
     // implement your own code to turn your device on/off
     this.states.on = value as boolean;
+    this.platform.log.debug(`Adjusting on state of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}: ${this.states.on}`);
     this.updateDeviceState();
   }
 
-  async getOn(): Promise<CharacteristicValue> {
+  getOn() {
+    this.platform.log.debug(`On state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: ${this.states.on}`);
     return this.states.on;
   }
 
-  async setBrightness(value: CharacteristicValue) {
+  setBrightness(value: CharacteristicValue) {
     // implement your own code to set the brightness
     this.states.brightness = value as number;
+    this.platform.log.debug(`Adjusting brightness of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}`);
     this.updateDeviceState();
   }
 
-  async setHomekitColorTemp(value: CharacteristicValue) {
-    // implement your own code to set the brightness
-    this.states.colorTemp = (100 - Math.round((((value as number) - 140) * 100) / 360));
+  getBrightness() {
+    this.platform.log.debug(`Brightness state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
+      this.states.brightness);
+    return this.states.brightness;
+  }
+
+  toHomekitColorTemp(value) {
+    return Math.round(1000000 / (2000 + (51 * value)));
+  }
+
+  toCyncColorTemp(value) {
+    return Math.round(((1000000 / value) - 2000) / 51);
+  }
+
+  setHomekitColorTemp(value: CharacteristicValue) {
+    this.states.colorTemp = this.toCyncColorTemp(value);
+    this.platform.log.debug(`Adjusting HK color temp of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}: `,
+      this.states.colorTemp);
     this.updateDeviceState();
+  }
+
+  getHomekitColorTemp() {
+    const hkColorTemp = this.toHomekitColorTemp(this.states.colorTemp);
+    this.platform.log.debug(`Color temp state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
+      `${this.states.colorTemp} => ${hkColorTemp}`);
+    return hkColorTemp;
   }
 
   hsv() {
     return convert.rgb.hsv(this.states.rgb[0], this.states.rgb[1], this.states.rgb[2]);
   }
 
-  async setHue(value: CharacteristicValue) {
+  setHue(value: CharacteristicValue) {
     const hsvValue = this.hsv();
     hsvValue[0] = value as number;
     this.states.rgb = convert.hsv.rgb(hsvValue);
     this.updateDeviceState();
   }
 
-  async setSaturation(value: CharacteristicValue) {
+  getHue() {
+    const hsv = this.hsv();
+    this.platform.log.debug(`Hue state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
+      `${this.states.rgb} => ${hsv[0]}`);
+    return hsv[0];
+  }
+
+  setSaturation(value: CharacteristicValue) {
     const hsvValue = this.hsv();
     hsvValue[1] = value as number;
     this.states.rgb = convert.hsv.rgb(hsvValue);
     this.updateDeviceState();
+  }
+
+  getSaturation() {
+    const hsv = this.hsv();
+    this.platform.log.debug(`Saturation state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
+      `${this.states.rgb} => ${hsv[1]}`);
+    return hsv[1];
   }
 
 }

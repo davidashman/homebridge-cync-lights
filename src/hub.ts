@@ -274,10 +274,16 @@ export class CyncHub {
   // }
 
   registerDevice(accessory : PlatformAccessory, device : CyncDevice, home : CyncHome) {
-    const light = new CyncLight(this.platform, accessory, this, device, home);
-    this.lights.push(light);
-    this.updateConection(device);
-    return light;
+    const existingLight = this.lights.find((light) => light.accessory.UUID === accessory.UUID);
+    if (existingLight) {
+      this.platform.log.debug(`Device ${accessory.displayName} (${accessory.UUID}) is already registered.`);
+      return existingLight;
+    } else {
+      const light = new CyncLight(this.platform, accessory, this, device, home);
+      this.lights.push(light);
+      this.updateConection(device);
+      return light;
+    }
   }
 
   handleConnection(packet : CyncPacket) {
