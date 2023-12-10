@@ -13,6 +13,7 @@ export class CyncHub {
   private socket!: Socket;
   private readonly queue: CyncPacket[] = [];
   private seq = 0;
+  private seqAck = 0;
   private readonly lights : CyncLight[] = [];
 
   constructor(
@@ -65,7 +66,7 @@ export class CyncHub {
 
   ping() {
     if (this.connected) {
-      this.writePacket(this.createPacket(CyncPacketType.Ping, PING_BUFFER));
+      this.writePacket(this.createPacket(CyncPacketType.Ping, -1, PING_BUFFER));
     }
   }
 
@@ -99,9 +100,13 @@ export class CyncHub {
     }
   }
 
-  createPacket(type : CyncPacketType, data : Buffer) : CyncPacket {
+  createPacket(type : CyncPacketType, packetSeq : number, data : Buffer, isResponse = false) : CyncPacket {
     const packet = Buffer.alloc(data.length + 5);
-    packet.writeUInt8((type << 4) | 3);
+    if (isResponse) {
+      packet.writeUInt8((type << 4) | 8);
+    } else {
+      packet.writeUInt8((type << 4) | 3);
+    }
 
     if (data.length > 0) {
       packet.writeUInt32BE(data.length, 1);
@@ -110,23 +115,25 @@ export class CyncHub {
 
     return {
       type: type,
-      isResponse: false,
+      seq: packetSeq,
+      isResponse: isResponse,
       length: packet.length,
       data: packet,
     };
   }
 
   createDevicePacket(device : CyncDevice, type : CyncPacketType, subtype : CyncPacketSubtype, deviceData : Buffer) : CyncPacket {
+    const packetSeq = this.seq++;
     const data = Buffer.alloc(18 + deviceData.length);
     data.writeUInt32BE(device.switchID);
-    data.writeUInt16BE(this.seq++, 4);
+    data.writeUInt16BE(packetSeq, 4);
     data.writeUInt8(0x7e, 7);
     data.writeUInt8(0xf8, 12);
     data.writeUInt8(subtype, 13); // status query subtype
     data.writeUInt8(deviceData.length, 14);
     deviceData.copy(data, 18);
 
-    return this.createPacket(type, data);
+    return this.createPacket(type, packetSeq, data);
   }
 
   readPackets() {
@@ -137,11 +144,11 @@ export class CyncHub {
         case CyncPacketType.Auth:
           this.handleAuth(packet);
           break;
-        case CyncPacketType.Status:
-          this.handleStatus(packet);
-          break;
         case CyncPacketType.Sync:
           this.handleSync(packet);
+          break;
+        case CyncPacketType.Status:
+          this.handleStatus(packet);
           break;
         // case CyncPacketType.StatusSync:
         //   this.handleStatusSync(packet);
@@ -169,8 +176,9 @@ export class CyncHub {
         if (data.length === length) {
           return {
             type: type,
-            length: length,
+            seq: this.readPacketSeq(type, data),
             isResponse: (header.readUInt8() & 8) !== 0,
+            length: length,
             data: data,
           };
         } else {
@@ -182,12 +190,21 @@ export class CyncHub {
     return null;
   }
 
+  readPacketSeq(type : CyncPacketType, data : Buffer) {
+    if (type === CyncPacketType.Status || type === CyncPacketType.Sync) {
+      return data.readUInt16BE(4);
+    }
+
+    return -1;
+  }
+
   updateConection(device : CyncDevice) {
     // Ask the server if each device is connected
+    const packetSeq = this.seq++;
     const data = Buffer.alloc(7);
     data.writeUInt32BE(device.switchID);
-    data.writeUInt16BE(this.seq++, 4);
-    this.sendPacket(this.createPacket(CyncPacketType.Connection, data), true);
+    data.writeUInt16BE(packetSeq, 4);
+    this.sendPacket(this.createPacket(CyncPacketType.Connection, packetSeq, data), true);
 
     // check again in 5 minutes
     setTimeout(() => {
@@ -212,7 +229,9 @@ export class CyncHub {
       const data = Buffer.alloc(7);
       data.writeUInt32BE(switchID);
       data.writeUInt16BE(responseID, 4);
-      this.sendPacket(this.createPacket(CyncPacketType.Status, data), false);
+      this.sendPacket(this.createPacket(CyncPacketType.Status, responseID, data), false);
+    } else {
+      this.seqAck = Math.max(this.seqAck, responseID);
     }
 
     if (packet.length >= 25) {

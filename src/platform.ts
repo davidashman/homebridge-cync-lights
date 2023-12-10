@@ -57,10 +57,10 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
           this.log.error(error.message);
         });
 
-      // check for devices every 10 minutes
+      // check for devices every minute
       setInterval(() => this.getAccessToken()
         .then((accessToken) => this.discoverDevices(accessToken))
-        .catch((error) => this.log.error(error.message)), 600000);
+        .catch((error) => this.log.error(error.message)), 60000);
     });
   }
 

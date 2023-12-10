@@ -115,10 +115,23 @@ export class CyncLight {
     }
   }
 
+  updateDeviceOn() {
+    const request = Buffer.alloc(13);
+    request.writeUInt16BE(this.device.meshID, 3);
+    request.writeUInt8(CyncPacketSubtype.SetOn, 5);
+    request.writeUInt8((this.states.on ? 1 : 0), 8);
+
+    const hash = ((429 + this.device.meshID + (this.states.on ? 1 : 0)) % 256);
+    request.writeUInt8(hash, 11);
+    request.writeUInt8(0x7e, 12);
+
+    this.hub.sendPacket(this.hub.createDevicePacket(this.device, CyncPacketType.Status, CyncPacketSubtype.SetOn, request), true);
+  }
+
   updateDeviceState() {
     const request = Buffer.alloc(16);
     request.writeUInt16BE(this.device.meshID, 3);
-    request.writeUInt8(CyncPacketSubtype.Set, 5);
+    request.writeUInt8(CyncPacketSubtype.SetState, 5);
     request.writeUInt8((this.states.on ? 1 : 0), 8);
     request.writeUInt8(this.states.brightness, 9);
     request.writeUInt8(this.states.colorTemp, 10);
@@ -132,14 +145,14 @@ export class CyncLight {
     request.writeUInt8(hash, 14);
     request.writeUInt8(0x7e, 15);
 
-    this.hub.sendPacket(this.hub.createDevicePacket(this.device, CyncPacketType.Status, CyncPacketSubtype.Set, request), true);
+    this.hub.sendPacket(this.hub.createDevicePacket(this.device, CyncPacketType.Status, CyncPacketSubtype.SetState, request), true);
   }
 
   setOn(value: CharacteristicValue) {
     // implement your own code to turn your device on/off
     this.states.on = value as boolean;
     this.platform.log.debug(`Adjusting on state of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}: ${this.states.on}`);
-    this.updateDeviceState();
+    this.updateDeviceOn();
   }
 
   getOn() {

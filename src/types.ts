@@ -34,7 +34,8 @@ export enum CyncPacketType {
 }
 
 export enum CyncPacketSubtype {
-  Set = 0xf0,
+  SetOn = 0xd0,
+  SetState = 0xf0,
   Get = 0xdb,
   Paginated = 0x52
 }
@@ -42,6 +43,7 @@ export enum CyncPacketSubtype {
 export interface CyncPacket {
 
   readonly type: CyncPacketType;
+  readonly seq: number;
   readonly length: number;
   readonly isResponse: boolean;
   readonly data: Buffer;
