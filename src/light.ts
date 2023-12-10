@@ -125,7 +125,7 @@ export class CyncLight {
     request.writeUInt8(hash, 11);
     request.writeUInt8(0x7e, 12);
 
-    this.hub.sendPacket(this.hub.createDevicePacket(this.device, CyncPacketType.Status, CyncPacketSubtype.SetOn, request), true);
+    this.hub.queueDevicePacket(this.device, CyncPacketType.Status, CyncPacketSubtype.SetOn, request);
   }
 
   updateDeviceState() {
@@ -145,7 +145,7 @@ export class CyncLight {
     request.writeUInt8(hash, 14);
     request.writeUInt8(0x7e, 15);
 
-    this.hub.sendPacket(this.hub.createDevicePacket(this.device, CyncPacketType.Status, CyncPacketSubtype.SetState, request), true);
+    this.hub.queueDevicePacket(this.device, CyncPacketType.Status, CyncPacketSubtype.SetState, request);
   }
 
   setOn(value: CharacteristicValue) {

@@ -27,10 +27,8 @@ export enum CyncPacketType {
   Auth = 1,
   Sync = 4,
   Status = 7,
-  StatusSync = 8,
   Connection = 10,
   Ping = 13,
-  PaginatedStatus = 17,
 }
 
 export enum CyncPacketSubtype {
@@ -43,7 +41,7 @@ export enum CyncPacketSubtype {
 export interface CyncPacket {
 
   readonly type: CyncPacketType;
-  readonly seq: number;
+  readonly seq: number | null;
   readonly length: number;
   readonly isResponse: boolean;
   readonly data: Buffer;
