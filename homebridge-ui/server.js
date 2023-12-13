@@ -1,6 +1,5 @@
-const { HomebridgePluginUiServer } = require('@homebridge/plugin-ui-utils');
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-
+import { HomebridgePluginUiServer } from '@homebridge/plugin-ui-utils';
+import fetch from 'node-fetch';
 
 class PluginUiServer extends HomebridgePluginUiServer {
 

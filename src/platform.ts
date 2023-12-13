@@ -141,6 +141,7 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
             this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
           }
 
+          // this.api.publishExternalAccessories(PLUGIN_NAME, [accessory]);
           this.hub.registerDevice(accessory, device, home);
           discovered.push(uuid);
         }
