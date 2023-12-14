@@ -44,8 +44,9 @@ export class CyncLight {
     // set accessory information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'GE')
-      .setCharacteristic(this.platform.Characteristic.Model, 'Cync Light')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, this.device.deviceID.toString());
+      .setCharacteristic(this.platform.Characteristic.Model, `Cync Direct Connect Light (${this.device.deviceType})`)
+      .setCharacteristic(this.platform.Characteristic.FirmwareRevision, this.device.firmwareVersion)
+      .setCharacteristic(this.platform.Characteristic.SerialNumber, this.device.mac);
 
     // get the LightBulb service if it exists, otherwise create a new LightBulb service
     // you can create multiple services for each accessory

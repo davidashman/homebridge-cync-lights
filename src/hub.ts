@@ -286,6 +286,7 @@ export class CyncHub {
       this.platform.log.debug(`Device ${accessory.displayName} (${accessory.UUID}) is already registered.`);
       return existingLight;
     } else {
+      this.platform.log.info(`Registering device: ${JSON.stringify(device)}`);
       const light = new CyncLight(this.platform, accessory, this, device, home);
       this.lights.push(light);
       this.updateConection(device);

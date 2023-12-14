@@ -18,6 +18,7 @@ export interface CyncDevice {
   readonly displayName: string;
   readonly deviceType: number;
   readonly mac: string;
+  readonly firmwareVersion: string;
 
   meshID: number;
 
