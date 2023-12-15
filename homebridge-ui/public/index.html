@@ -37,7 +37,9 @@
 <script>
     homebridge.addEventListener('ready', async () => {
         let pluginConfig = await homebridge.getPluginConfig();
-        document.getElementById('emailAddress').value = pluginConfig[0].emailAddress;
+        if (pluginConfig[0]) {
+            document.getElementById('emailAddress').value = pluginConfig[0].emailAddress;
+        }
 
         document.getElementById('requestCode').addEventListener('click', () => {
             document.getElementById('mfaCode').value = '';

@@ -82,7 +82,7 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
 
     if (this.accessTokenExpires < Date.now()) {
       // first, check the access_token
-      this.log.info('Logging into Cync...');
+      this.log.info('Updating access token...');
 
       const payload = {refresh_token: this.config.refreshToken};
       const token = await fetch('https://api.gelighting.com/v2/user/token/refresh', {
@@ -100,6 +100,8 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
       this.accessToken = data.access_token;
       // We will refresh it one day before it expires
       this.accessTokenExpires = Date.now() + data.expires_in - 86400;
+    } else {
+      this.log.info(`Access token valid until ${new Date(this.accessTokenExpires)}`);
     }
 
     return this.accessToken;
@@ -115,43 +117,49 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
     const r = await fetch(`https://api.gelighting.com/v2/user/${this.config.userID}/subscribe/devices`, {
       headers: {'Access-Token': accessToken},
     });
-    const data = await r.json() as CyncHome[];
-    this.log.debug(`Received home response: ${JSON.stringify(data)}`);
 
-    for (const home of data) {
-      const homeR = await fetch(`https://api.gelighting.com/v2/product/${home.product_id}/device/${home.id}/property`, {
-        headers: {'Access-Token': accessToken},
-      });
-      const homeData = await homeR.json() as CyncHomeDevices;
-      this.log.debug(`Received device response: ${JSON.stringify(homeData)}`);
-      if (homeData.bulbsArray && homeData.bulbsArray.length > 0) {
-        const discovered: string[] = [];
+    if (r.status === 200) {
+      const data = await r.json() as CyncHome[];
+      this.log.debug(`Received home response: ${JSON.stringify(data)}`);
 
-        for (const device of homeData.bulbsArray) {
-          const uuid = this.api.hap.uuid.generate(`${device.mac}`);
-          let accessory = this.accessories.find(accessory => accessory.UUID === uuid);
+      for (const home of data) {
+        const homeR = await fetch(`https://api.gelighting.com/v2/product/${home.product_id}/device/${home.id}/property`, {
+          headers: {'Access-Token': accessToken},
+        });
+        const homeData = await homeR.json() as CyncHomeDevices;
+        this.log.debug(`Received device response: ${JSON.stringify(homeData)}`);
+        if (homeData.bulbsArray && homeData.bulbsArray.length > 0) {
+          const discovered: string[] = [];
 
-          if (!accessory) {
-            this.log.info('Adding new accessory:', device.displayName);
+          for (const device of homeData.bulbsArray) {
+            const uuid = this.api.hap.uuid.generate(`${device.mac}`);
+            let accessory = this.accessories.find(accessory => accessory.UUID === uuid);
 
-            // create a new accessory
-            accessory = new this.api.platformAccessory(device.displayName, uuid);
+            if (!accessory) {
+              this.log.info('Adding new accessory:', device.displayName);
 
-            this.log.info(`Registering accessory ${device.displayName}`);
-            this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+              // create a new accessory
+              accessory = new this.api.platformAccessory(device.displayName, uuid);
+
+              this.log.info(`Registering accessory ${device.displayName}`);
+              this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+            }
+
+            this.hub.registerDevice(accessory, device, home);
+            discovered.push(uuid);
           }
 
-          this.hub.registerDevice(accessory, device, home);
-          discovered.push(uuid);
-        }
-
-        const remove = this.accessories.filter((accessory) => !discovered.includes(accessory.UUID));
-        for (const accessory of remove) {
-          this.log.info('Removing accessory: ', accessory.displayName);
-          this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+          const remove = this.accessories.filter((accessory) => !discovered.includes(accessory.UUID));
+          for (const accessory of remove) {
+            this.log.info('Removing accessory: ', accessory.displayName);
+            this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+          }
         }
       }
+    } else {
+      this.log.error(`Failed to get home update: ${r.statusText}`);
     }
+
   }
 
 }
