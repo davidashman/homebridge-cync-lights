@@ -1,11 +1,36 @@
 import {PlatformAccessory} from 'homebridge';
 import {connect, Socket} from 'net';
-import {CyncDevice, CyncHome, CyncPacket, CyncPacketSubtype, CyncPacketType} from './types.js';
+import EventEmitter from 'events';
 import {CyncLight} from './light.js';
 import {CyncLightsPlatform} from './platform.js';
-import EventEmitter from 'events';
+import {CyncDevice, CyncHome} from './api.js';
 
 const PING_BUFFER = Buffer.alloc(0);
+
+export enum CyncPacketType {
+  Auth = 1,
+  Sync = 4,
+  Status = 7,
+  Connection = 10,
+  Ping = 13,
+}
+
+export enum CyncPacketSubtype {
+  SetOn = 0xd0,
+  SetState = 0xf0,
+  Get = 0xdb,
+  Paginated = 0x52
+}
+
+interface CyncPacket {
+
+  readonly type: CyncPacketType;
+  readonly seq: number | null;
+  readonly length: number;
+  readonly isResponse: boolean;
+  readonly data: Buffer;
+
+}
 
 export class CyncHub {
 

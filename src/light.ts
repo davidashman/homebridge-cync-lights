@@ -1,8 +1,8 @@
 import {Service, PlatformAccessory, CharacteristicValue} from 'homebridge';
 
 import {CyncLightsPlatform} from './platform.js';
-import {CyncHub} from './hub.js';
-import {CyncDevice, CyncHome, CyncPacketSubtype, CyncPacketType} from './types.js';
+import {CyncHub, CyncPacketSubtype, CyncPacketType} from './hub.js';
+import {CyncDevice, CyncHome} from './api.js';
 import convert from 'color-convert';
 
 /**
