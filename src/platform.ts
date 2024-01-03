@@ -1,11 +1,12 @@
 import {
   API,
+  Categories,
+  Characteristic,
   DynamicPlatformPlugin,
   Logger,
   PlatformAccessory,
   PlatformConfig,
   Service,
-  Characteristic,
 } from 'homebridge';
 
 import {PLATFORM_NAME, PLUGIN_NAME} from './settings.js';
@@ -53,7 +54,7 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
     this.log.info('Loading accessory from cache:', accessory.displayName);
 
     // add the restored accessory to the accessories cache so we can track if it has already been registered
-    this.accessories.push(accessory);
+    // this.accessories.push(accessory);
   }
 
   /**
@@ -72,7 +73,9 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
         this.log.info('Adding new accessory:', device.displayName);
 
         // create a new accessory
-        accessory = new this.api.platformAccessory(device.displayName, uuid);
+        accessory = new this.api.platformAccessory(device.displayName, uuid, Categories.LIGHTBULB);
+        accessory.context.device = device;
+        accessory.context.home = home;
         this.accessories.push(accessory);
 
         this.log.info(`Registering accessory ${device.displayName}`);
@@ -86,7 +89,7 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
     const remove = this.accessories.filter((accessory) => !discovered.includes(accessory.UUID));
     for (const accessory of remove) {
       this.log.info('Removing accessory: ', accessory.displayName);
-      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+      this.hub.deregisterDevice(accessory);
     }
   }
 

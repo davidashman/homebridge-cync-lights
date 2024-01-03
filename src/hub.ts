@@ -38,7 +38,7 @@ export class CyncHub {
   private connectionTime = 0;
   private socket!: Socket;
   private seq = 0;
-  private readonly lights : CyncLight[] = [];
+  public readonly lights : CyncLight[] = [];
   private readonly queue: CyncPacket[] = [];
   private readonly queueEmitter = new EventEmitter();
 
@@ -309,12 +309,26 @@ export class CyncHub {
     const existingLight = this.lights.find((light) => light.accessory.UUID === accessory.UUID);
     if (existingLight) {
       this.platform.log.debug(`Device ${accessory.displayName} (${accessory.UUID}) is already registered.`);
+      existingLight.offline = false;
       return existingLight;
     } else {
       this.platform.log.info(`Registering device: ${JSON.stringify(device)}`);
       const light = new CyncLight(this.platform, accessory, this, device, home);
       this.lights.push(light);
       this.updateConection(device);
+      return light;
+    }
+  }
+
+  deregisterDevice(accessory : PlatformAccessory) {
+    const existingLight = this.lights.find((light) => light.accessory.UUID === accessory.UUID);
+    if (existingLight) {
+      this.platform.log.debug(`Device ${accessory.displayName} (${accessory.UUID}) is already registered.  Setting offline.`);
+      existingLight.offline = true;
+      return existingLight;
+    } else {
+      const light = new CyncLight(this.platform, accessory, this, accessory.context.device, accessory.context.home, true);
+      this.lights.push(light);
       return light;
     }
   }

@@ -37,6 +37,7 @@ export class CyncLight {
     public readonly hub: CyncHub,
     public readonly device: CyncDevice,
     public readonly home: CyncHome,
+    public offline: boolean = false,
   ) {
 
     this.device.meshID = ((this.device.deviceID % this.home.id) % 1000) + (Math.round((this.device.deviceID % this.home.id) / 1000) * 256);
@@ -149,26 +150,39 @@ export class CyncLight {
     this.hub.queueDevicePacket(this.device, CyncPacketType.Status, CyncPacketSubtype.SetState, request);
   }
 
+  checkOffline() {
+    if (this.offline) {
+      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+    }
+  }
+
   setOn(value: CharacteristicValue) {
-    // implement your own code to turn your device on/off
-    this.states.on = value as boolean;
-    this.platform.log.debug(`Adjusting on state of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}: ${this.states.on}`);
-    this.updateDeviceOn();
+    if (!this.offline) {
+      // implement your own code to turn your device on/off
+      this.states.on = value as boolean;
+      this.platform.log.debug(`Adjusting on state of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}: `,
+        this.states.on);
+      this.updateDeviceOn();
+    }
   }
 
   getOn() {
+    this.checkOffline();
     this.platform.log.debug(`On state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: ${this.states.on}`);
     return this.states.on;
   }
 
   setBrightness(value: CharacteristicValue) {
-    // implement your own code to set the brightness
-    this.states.brightness = value as number;
-    this.platform.log.debug(`Adjusting brightness of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}`);
-    this.updateDeviceState();
+    if (!this.offline) {
+      // implement your own code to set the brightness
+      this.states.brightness = value as number;
+      this.platform.log.debug(`Adjusting brightness of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}`);
+      this.updateDeviceState();
+    }
   }
 
   getBrightness() {
+    this.checkOffline();
     this.platform.log.debug(`Brightness state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
       this.states.brightness);
     return this.states.brightness;
@@ -183,13 +197,16 @@ export class CyncLight {
   }
 
   setHomekitColorTemp(value: CharacteristicValue) {
-    this.states.colorTemp = this.toCyncColorTemp(value);
-    this.platform.log.debug(`Adjusting HK color temp of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}: `,
-      this.states.colorTemp);
-    this.updateDeviceState();
+    if (!this.offline) {
+      this.states.colorTemp = this.toCyncColorTemp(value);
+      this.platform.log.debug(`Adjusting HK color temp of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}: `,
+        this.states.colorTemp);
+      this.updateDeviceState();
+    }
   }
 
   getHomekitColorTemp() {
+    this.checkOffline();
     const hkColorTemp = this.toHomekitColorTemp(this.states.colorTemp);
     this.platform.log.debug(`Color temp state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
       `${this.states.colorTemp} => ${hkColorTemp}`);
@@ -201,13 +218,16 @@ export class CyncLight {
   }
 
   setHue(value: CharacteristicValue) {
-    const hsvValue = this.hsv();
-    hsvValue[0] = value as number;
-    this.states.rgb = convert.hsv.rgb(hsvValue);
-    this.updateDeviceState();
+    if (!this.offline) {
+      const hsvValue = this.hsv();
+      hsvValue[0] = value as number;
+      this.states.rgb = convert.hsv.rgb(hsvValue);
+      this.updateDeviceState();
+    }
   }
 
   getHue() {
+    this.checkOffline();
     const hsv = this.hsv();
     this.platform.log.debug(`Hue state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
       `${this.states.rgb} => ${hsv[0]}`);
@@ -215,13 +235,16 @@ export class CyncLight {
   }
 
   setSaturation(value: CharacteristicValue) {
-    const hsvValue = this.hsv();
-    hsvValue[1] = value as number;
-    this.states.rgb = convert.hsv.rgb(hsvValue);
-    this.updateDeviceState();
+    if (!this.offline) {
+      const hsvValue = this.hsv();
+      hsvValue[1] = value as number;
+      this.states.rgb = convert.hsv.rgb(hsvValue);
+      this.updateDeviceState();
+    }
   }
 
   getSaturation() {
+    this.checkOffline();
     const hsv = this.hsv();
     this.platform.log.debug(`Saturation state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
       `${this.states.rgb} => ${hsv[1]}`);
