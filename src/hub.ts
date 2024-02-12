@@ -59,16 +59,16 @@ export class CyncHub {
       this.socket.on('end', this.disconnect.bind(this));
 
       this.platform.log.info('Authenticating with Cync server...');
-      const dataLength = this.platform.config.authorize.length + 10;
+      const dataLength = this.platform.cyncApi.authorize.length + 10;
       const packet = Buffer.alloc(dataLength + 5);
       packet.writeUInt8((CyncPacketType.Auth << 4) | 3);
       packet.writeUInt32BE(dataLength, 1);
       packet.writeUInt8(0x03, 5);
-      packet.writeUInt32BE(this.platform.config.userID, 6);
-      packet.writeUInt8(this.platform.config.authorize.length, 11);
-      packet.write(this.platform.config.authorize, 12, this.platform.config.authorize.length, 'ascii');
-      packet.writeUInt8(0xb4, this.platform.config.authorize.length + 14);
-      this.platform.log.debug(`Authenticating with packet: ${packet.toString('hex')}`);
+      packet.writeUInt32BE(this.platform.cyncApi.userID, 6);
+      packet.writeUInt8(this.platform.cyncApi.authorize.length, 11);
+      packet.write(this.platform.cyncApi.authorize, 12, this.platform.cyncApi.authorize.length, 'ascii');
+      packet.writeUInt8(0xb4, this.platform.cyncApi.authorize.length + 14);
+      this.platform.log.info(`Authenticating with packet: ${packet.toString('hex')}`);
       this.socket.write(packet);
     }
   }
@@ -94,14 +94,14 @@ export class CyncHub {
 
   writePacket(packet : CyncPacket | undefined) {
     if (packet) {
-      this.platform.log.debug(`Sending ${packet.type} packet #${packet.seq}.`);
+      this.platform.log.info(`Sending ${packet.type} packet #${packet.seq}.`);
       this.socket.write(packet.data);
     }
   }
 
   processQueue() {
     if (this.connected) {
-      this.platform.log.debug(`Processing queue of ${this.queue.length} packets.`);
+      this.platform.log.info(`Processing queue of ${this.queue.length} packets.`);
       while (this.queue.length > 0) {
         this.writePacket(this.queue.shift());
       }
@@ -129,7 +129,7 @@ export class CyncHub {
       data: packetData,
     };
 
-    this.platform.log.debug(`Queuing ${type} packet #${packet.seq}.`);
+    this.platform.log.info(`Queuing ${type} packet #${packet.seq}.`);
     // queue the packet
     this.queue.push(packet);
     this.queueEmitter.emit('queued');
@@ -151,7 +151,7 @@ export class CyncHub {
   }
 
   acknowledgePacket(packet : CyncPacket) {
-    this.platform.log.debug(`Acknowledging packet ${packet.seq}.`);
+    this.platform.log.info(`Acknowledging packet ${packet.seq}.`);
     this.queuePacket(packet.type, packet.data.subarray(0, 7), true);
   }
 
@@ -187,7 +187,7 @@ export class CyncHub {
     if (header) {
       const type = (header.readUInt8() >>> 4);
       const length = header.readUInt32BE(1);
-      this.platform.log.debug(`Got packet header with type ${type}, header ${header.toString('hex')}, length ${length}`);
+      this.platform.log.info(`Got packet header with type ${type}, header ${header.toString('hex')}, length ${length}`);
 
       if (length > 0) {
         const data = this.socket.read(length);
@@ -263,7 +263,7 @@ export class CyncHub {
   }
 
   // handleStatusUpdate(status) {
-  //   this.platform.log.debug(`Status packet: ${status.toString('hex')}`);
+  //   this.platform.log.info(`Status packet: ${status.toString('hex')}`);
   //   const meshID = status.readUInt8(21);
   //   const on = status.readUInt8(27) > 0;
   //   const brightness = on ? status.readUInt8(28) : 0;
@@ -271,7 +271,7 @@ export class CyncHub {
   // }
 
   handlePaginatedStatusUpdate(status) {
-    this.platform.log.debug(`Paginated Status packet: ${status.toString('hex')}`);
+    this.platform.log.info(`Paginated Status packet: ${status.toString('hex')}`);
     const meshID = status.readUInt8();
     const on = status.readUInt8(8) > 0;
     const brightness = on ? status.readUInt8(12) : 0;
@@ -287,7 +287,7 @@ export class CyncHub {
   }
 
   handleSyncStatus(status) {
-    this.platform.log.debug(`Sync packet: ${status.toString('hex')}`);
+    this.platform.log.info(`Sync packet: ${status.toString('hex')}`);
     const meshID = status.readUInt8(3);
     const on = status.readUInt8(4) > 0;
     const brightness = on ? status.readUInt8(5) : 0;
@@ -297,7 +297,7 @@ export class CyncHub {
 
   // handleStatusSync(packet) {
   //   if (packet.length >= 33) {
-  //     this.platform.log.debug(`Sync packet: ${packet.toString('hex')}`);
+  //     this.platform.log.info(`Sync packet: ${packet.toString('hex')}`);
   //     const meshID = packet.data.readUInt8(21);
   //     const on = packet.data.readUInt8(27) > 0;
   //     const brightness = on ? packet.data.readUInt8(28) : 0;
@@ -308,7 +308,7 @@ export class CyncHub {
   registerDevice(accessory : PlatformAccessory, device : CyncDevice, home : CyncHome) {
     const existingLight = this.lights.find((light) => light.accessory.UUID === accessory.UUID);
     if (existingLight) {
-      this.platform.log.debug(`Device ${accessory.displayName} (${accessory.UUID}) is already registered.`);
+      this.platform.log.info(`Device ${accessory.displayName} (${accessory.UUID}) is already registered.`);
       existingLight.offline = false;
       return existingLight;
     } else {
@@ -323,7 +323,7 @@ export class CyncHub {
   deregisterDevice(accessory : PlatformAccessory) {
     const existingLight = this.lights.find((light) => light.accessory.UUID === accessory.UUID);
     if (existingLight) {
-      this.platform.log.debug(`Device ${accessory.displayName} (${accessory.UUID}) is already registered.  Setting offline.`);
+      this.platform.log.info(`Device ${accessory.displayName} (${accessory.UUID}) is already registered.  Setting offline.`);
       existingLight.offline = true;
       return existingLight;
     } else {

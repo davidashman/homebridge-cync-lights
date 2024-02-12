@@ -1,5 +1,7 @@
 import { HomebridgePluginUiServer } from '@homebridge/plugin-ui-utils';
 import fetch from 'node-fetch';
+import fs from 'node:fs';
+import path from "node:path";
 
 class PluginUiServer extends HomebridgePluginUiServer {
 
@@ -45,14 +47,12 @@ class PluginUiServer extends HomebridgePluginUiServer {
             }
         }
         else {
+            fs.writeFileSync(path.join(this.homebridgeStoragePath, 'cync.json'), JSON.stringify(data), 'utf-8');
             return {
                 platform: 'CyncLights',
                 name: 'Cync Lights',
-                emailAddress: payload.emailAddress,
-                refreshToken: data.refresh_token,
-                userID: data.user_id,
-                authorize: data.authorize,
-            };
+                emailAddress: payload.emailAddress
+            }
         }
     }
 

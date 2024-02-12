@@ -160,7 +160,7 @@ export class CyncLight {
     if (!this.offline) {
       // implement your own code to turn your device on/off
       this.states.on = value as boolean;
-      this.platform.log.debug(`Adjusting on state of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}: `,
+      this.platform.log.info(`Adjusting on state of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}: `,
         this.states.on);
       this.updateDeviceOn();
     }
@@ -168,7 +168,7 @@ export class CyncLight {
 
   getOn() {
     this.checkOffline();
-    this.platform.log.debug(`On state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: ${this.states.on}`);
+    this.platform.log.info(`On state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: ${this.states.on}`);
     return this.states.on;
   }
 
@@ -176,14 +176,14 @@ export class CyncLight {
     if (!this.offline) {
       // implement your own code to set the brightness
       this.states.brightness = value as number;
-      this.platform.log.debug(`Adjusting brightness of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}`);
+      this.platform.log.info(`Adjusting brightness of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}`);
       this.updateDeviceState();
     }
   }
 
   getBrightness() {
     this.checkOffline();
-    this.platform.log.debug(`Brightness state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
+    this.platform.log.info(`Brightness state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
       this.states.brightness);
     return this.states.brightness;
   }
@@ -199,7 +199,7 @@ export class CyncLight {
   setHomekitColorTemp(value: CharacteristicValue) {
     if (!this.offline) {
       this.states.colorTemp = this.toCyncColorTemp(value);
-      this.platform.log.debug(`Adjusting HK color temp of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}: `,
+      this.platform.log.info(`Adjusting HK color temp of ${this.accessory.displayName} (${this.accessory.UUID}) to ${value}: `,
         this.states.colorTemp);
       this.updateDeviceState();
     }
@@ -208,7 +208,7 @@ export class CyncLight {
   getHomekitColorTemp() {
     this.checkOffline();
     const hkColorTemp = this.toHomekitColorTemp(this.states.colorTemp);
-    this.platform.log.debug(`Color temp state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
+    this.platform.log.info(`Color temp state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
       `${this.states.colorTemp} => ${hkColorTemp}`);
     return hkColorTemp;
   }
@@ -229,7 +229,7 @@ export class CyncLight {
   getHue() {
     this.checkOffline();
     const hsv = this.hsv();
-    this.platform.log.debug(`Hue state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
+    this.platform.log.info(`Hue state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
       `${this.states.rgb} => ${hsv[0]}`);
     return hsv[0];
   }
@@ -246,7 +246,7 @@ export class CyncLight {
   getSaturation() {
     this.checkOffline();
     const hsv = this.hsv();
-    this.platform.log.debug(`Saturation state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
+    this.platform.log.info(`Saturation state of ${this.accessory.displayName} (${this.accessory.UUID}) requested: `,
       `${this.states.rgb} => ${hsv[1]}`);
     return hsv[1];
   }

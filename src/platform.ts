@@ -27,13 +27,14 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
 
   // public readonly auth: CyncAuth;
   public readonly hub = new CyncHub(this);
-  private readonly cyncApi = new CyncApi(this);
+  public readonly cyncApi = new CyncApi(this);
 
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
+
     this.api.on('didFinishLaunching', () => {
       // connect to server
       this.hub.connect();
