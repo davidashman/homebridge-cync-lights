@@ -91,7 +91,7 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
     for (const accessory of remove) {
       this.log.info('Removing accessory: ', accessory.displayName);
       this.hub.deregisterDevice(accessory);
-      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME,[accessory]);
+      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
     }
   }
 
