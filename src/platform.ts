@@ -55,7 +55,7 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
     this.log.info('Loading accessory from cache:', accessory.displayName);
 
     // add the restored accessory to the accessories cache so we can track if it has already been registered
-    // this.accessories.push(accessory);
+    this.accessories.push(accessory);
   }
 
   /**
@@ -91,6 +91,7 @@ export class CyncLightsPlatform implements DynamicPlatformPlugin {
     for (const accessory of remove) {
       this.log.info('Removing accessory: ', accessory.displayName);
       this.hub.deregisterDevice(accessory);
+      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME,[accessory]);
     }
   }
 
